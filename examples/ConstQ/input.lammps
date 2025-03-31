@@ -1,0 +1,36 @@
+variable        NSTEPS          equal 500
+variable        THERMO_FREQ     equal 100
+variable        DUMP_FREQ       equal 5
+variable        TEMP            equal 300.000000
+variable        PRES            equal -1.000000
+variable        TAU_T           equal 0.100000
+variable        TAU_P           equal 0.500000
+
+units           metal
+boundary        p p p
+atom_style      atomic
+
+neighbor        1.0 bin
+
+box          tilt large
+if "${restart} > 0" then "read_restart dpgen.restart.*" else "read_data conf.lmp"
+change_box   all triclinic
+mass            1 7.016003
+mass            2 12.000000
+mass            3 1.007825
+mass            4 15.994915
+mass            5 30.973762
+mass            6 18.998403
+pair_style      deepmd ../graph.000.pb ../graph.001.pb ../graph.002.pb ../graph.003.pb  out_freq ${THERMO_FREQ} out_file model_devi.out 
+pair_coeff      * *
+
+thermo_style    custom step temp pe ke etotal press vol lx ly lz xy xz yz
+thermo          ${THERMO_FREQ}
+dump            1 all custom ${DUMP_FREQ} traj/*.lammpstrj id type x y z fx fy fz
+restart         10000 dpgen.restart
+
+if "${restart} == 0" then "velocity        all create ${TEMP} 899423"
+fix             1 all nvt temp ${TEMP} ${TEMP} ${TAU_T}
+
+timestep        0.001000
+run             ${NSTEPS} upto
